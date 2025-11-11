@@ -29,6 +29,8 @@ interface BlockSelectorProps {
   onBlocksChange: (blocks: string[]) => void;
   label?: string;
   className?: string;
+  compact?: boolean;
+  showFilterChip?: boolean;
 }
 
 export function BlockSelector({
@@ -36,6 +38,8 @@ export function BlockSelector({
   onBlocksChange,
   label = "Block",
   className,
+  compact = false,
+  showFilterChip = false,
 }: BlockSelectorProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -56,59 +60,82 @@ export function BlockSelector({
       ? "All Blocks"
       : selectedBlocks.length === availableBlocks.length
       ? "All Blocks"
-      : `${selectedBlocks.length} selected`;
+      : `${selectedBlocks.length} Block${selectedBlocks.length > 1 ? 's' : ''}`;
+
+  const selectedBlockNames = selectedBlocks
+    .map((id) => availableBlocks.find((b) => b.id === id)?.name)
+    .filter(Boolean)
+    .join(", ");
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
-      {label && <label className="text-sm font-medium">{label}</label>}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-[240px] justify-between hover:bg-muted/50"
-          >
-            <span className="truncate">{displayText}</span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[240px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Search blocks..." />
-            <CommandList>
-              <CommandEmpty>No blocks found.</CommandEmpty>
-              <CommandGroup>
-                {availableBlocks.map((block) => (
-                  <CommandItem
-                    key={block.id}
-                    value={block.name}
-                    onSelect={() => toggleBlock(block.id)}
-                    className="cursor-pointer"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedBlocks.includes(block.id)
-                          ? "opacity-100 text-aqua"
-                          : "opacity-0"
-                      )}
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-medium">{block.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {block.location}
-                      </span>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+    <div className={cn("flex items-center gap-3", className)}>
+      <div className="flex flex-col gap-2">
+        {label && !compact && <label className="text-sm font-medium">{label}</label>}
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className={cn(
+                "justify-between hover:bg-muted/50",
+                compact ? "h-9 w-[180px]" : "w-[240px]"
+              )}
+            >
+              <span className="truncate text-sm">{displayText}</span>
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[260px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Search blocks..." className="h-9" />
+              <CommandList>
+                <CommandEmpty>No blocks found.</CommandEmpty>
+                <CommandGroup>
+                  {availableBlocks.map((block) => (
+                    <CommandItem
+                      key={block.id}
+                      value={block.name}
+                      onSelect={() => toggleBlock(block.id)}
+                      className="cursor-pointer"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedBlocks.includes(block.id)
+                            ? "opacity-100 text-[hsl(var(--aqua))]"
+                            : "opacity-0"
+                        )}
+                      />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">{block.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {block.location}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
 
-      {selectedBlocks.length > 0 && selectedBlocks.length < availableBlocks.length && (
+      {showFilterChip && selectedBlocks.length > 0 && selectedBlocks.length < availableBlocks.length && (
+        <Badge
+          variant="outline"
+          className="gap-2 bg-[hsl(var(--aqua))]/10 text-[hsl(var(--aqua))] border-[hsl(var(--aqua))]/30 px-3 py-1 text-xs font-medium"
+        >
+          Filtered by: {selectedBlockNames}
+          <X
+            className="h-3 w-3 cursor-pointer hover:opacity-70"
+            onClick={() => onBlocksChange([])}
+          />
+        </Badge>
+      )}
+
+      {!showFilterChip && selectedBlocks.length > 0 && selectedBlocks.length < availableBlocks.length && !compact && (
         <div className="flex flex-wrap gap-2">
           {selectedBlocks.map((blockId) => {
             const block = availableBlocks.find((b) => b.id === blockId);
@@ -117,7 +144,7 @@ export function BlockSelector({
               <Badge
                 key={block.id}
                 variant="outline"
-                className="gap-1 bg-aqua/10 text-aqua border-aqua/20 hover:bg-aqua/20"
+                className="gap-1 bg-[hsl(var(--aqua))]/10 text-[hsl(var(--aqua))] border-[hsl(var(--aqua))]/30 hover:bg-[hsl(var(--aqua))]/20"
               >
                 {block.name}
                 <X

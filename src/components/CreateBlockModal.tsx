@@ -38,49 +38,54 @@ export function CreateBlockModal({ open, onOpenChange, onCreateBlock }: CreateBl
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Create New Block</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">Create Block</DialogTitle>
           <DialogDescription>
-            Add a new block to organize your devices. All fields marked with * are required.
+            Add a new block to organize your devices. Fill in the details below.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="block-name">
+              <Label htmlFor="block-name" className="text-sm font-medium">
                 Block Name <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="block-name"
-                placeholder="e.g., Block A"
+                placeholder="e.g., Block E"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                className="h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="block-location">
+              <Label htmlFor="block-location" className="text-sm font-medium">
                 Location <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="block-location"
-                placeholder="e.g., Building A - Floor 1"
+                placeholder="e.g., Building E - Floor 2"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 required
+                className="h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="block-description">Description</Label>
+              <Label htmlFor="block-description" className="text-sm font-medium">
+                Description
+              </Label>
               <Textarea
                 id="block-description"
-                placeholder="Optional description of this block..."
+                placeholder="Optional description of the block..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
+                className="resize-none"
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               type="button"
               variant="outline"
@@ -88,7 +93,11 @@ export function CreateBlockModal({ open, onOpenChange, onCreateBlock }: CreateBl
             >
               Cancel
             </Button>
-            <Button type="submit" variant="aqua" disabled={!name.trim() || !location.trim()}>
+            <Button 
+              type="submit" 
+              disabled={!name.trim() || !location.trim()}
+              className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
+            >
               Create Block
             </Button>
           </DialogFooter>
