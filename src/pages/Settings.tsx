@@ -1,130 +1,96 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle } from "lucide-react";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 
 export default function Settings() {
-  const [minThreshold, setMinThreshold] = useState("");
-  const [maxThreshold, setMaxThreshold] = useState("");
-  const [themeAccent, setThemeAccent] = useState("aqua");
-  const [darkMode, setDarkMode] = useState(false);
-  // Notifications removed per request
-  const [thresholdError, setThresholdError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [sumpThreshold, setSumpThreshold] = useState<number>(50);
+  const [tankRange, setTankRange] = useState<number[]>([20, 80]);
+  const [savedSump, setSavedSump] = useState(false);
+  const [savedTank, setSavedTank] = useState(false);
 
-  const handleSaveThresholds = () => {
-    setSaved(false);
-    setThresholdError(null);
-    const min = Number(minThreshold);
-    const max = Number(maxThreshold);
-    if (isNaN(min) || isNaN(max)) {
-      setThresholdError("Both values must be numbers.");
-      return;
-    }
-    if (min < 0 || max < 0) {
-      setThresholdError("Values cannot be negative.");
-      return;
-    }
-    if (min >= max) {
-      setThresholdError("Min must be less than Max.");
-      return;
-    }
-    console.log("Saving thresholds:", { min, max });
-    setSaved(true);
+  const saveSump = () => {
+    console.log('Saving sump threshold', sumpThreshold);
+    setSavedSump(true);
+    setTimeout(() => setSavedSump(false), 3000);
   };
-
-  const handleSaveTheme = () => {
-    console.log("Saving theme settings:", { accent: themeAccent, darkMode });
-    setSaved(true);
-    // Dark mode toggle demo (simple add/remove class on document root)
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+  const saveTank = () => {
+    console.log('Saving tank threshold', tankRange);
+    setSavedTank(true);
+    setTimeout(() => setSavedTank(false), 3000);
   };
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+    <div className="space-y-6 animate-fadeIn">
+      <h1 className="text-3xl font-bold tracking-tight text-soft text-center">Settings</h1>
 
-      {/* Theme Settings */}
-      <Card className="shadow-soft-md border-border/50">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Theme</CardTitle>
+      <div className="grid gap-6 md:grid-cols-2">
+  {/* Sump Threshold */}
+      <Card className="rounded-lg border border-border/50 bg-card shadow-soft-lg">
+        <CardHeader className="border-b bg-muted/30 py-3">
+          <CardTitle className="text-sm font-medium">Sump Threshold</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Dark Mode</p>
-              <p className="text-xs text-soft-muted">Toggle application dark theme</p>
-            </div>
-            <Switch checked={darkMode} onCheckedChange={setDarkMode} aria-label={darkMode ? 'Disable dark mode' : 'Enable dark mode'} />
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between text-xs text-soft-muted">
+            <span>Value: <span className="font-semibold text-soft">{sumpThreshold}%</span></span>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Accent Color</label>
-            <Select value={themeAccent} onValueChange={setThemeAccent}>
-              <SelectTrigger className="w-48 h-9"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="aqua">Aqua</SelectItem>
-                <SelectItem value="success">Green</SelectItem>
-                <SelectItem value="warning">Amber</SelectItem>
-                <SelectItem value="destructive">Red</SelectItem>
-              </SelectContent>
-            </Select>
+          <Slider
+            value={[sumpThreshold]}
+            onValueChange={(v) => setSumpThreshold(v[0])}
+            min={0}
+            max={100}
+            step={1}
+            className="mt-2"
+          />
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>0%</span><span>100%</span>
           </div>
-          <Button onClick={handleSaveTheme} className="h-9 bg-[hsl(var(--navy))] hover:bg-[hsl(var(--navy-hover))] text-white">Save Theme</Button>
+          <div className="flex justify-end">
+            <Button
+              onClick={saveSump}
+              className="h-8 px-4 bg-[hsl(var(--navy))] hover:bg-[hsl(var(--navy-hover))] text-white text-xs"
+            >
+              Save Sump
+            </Button>
+          </div>
+          {savedSump && <p className="text-[10px] text-success text-right mt-1">Saved.</p>}
         </CardContent>
-      </Card>
+  </Card>
 
-      {/* Threshold Settings */}
-      <Card className="shadow-soft-md border-border/50">
-        <CardHeader className="pb-3 flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">Thresholds</CardTitle>
-          {saved && !thresholdError && (
-            <Badge className="bg-success/15 text-success border-success/20 flex items-center gap-1" variant="outline"><CheckCircle className="h-3 w-3" /> Saved</Badge>
-          )}
+  {/* Tank Threshold */}
+  <Card className="rounded-lg border border-border/50 bg-card shadow-soft-lg">
+        <CardHeader className="border-b bg-muted/30 py-3">
+          <CardTitle className="text-sm font-medium">Tank Threshold</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="space-y-1">
-              <label htmlFor="minThreshold" className="text-sm font-medium">Min</label>
-              <Input
-                id="minThreshold"
-                type="number"
-                aria-label="Minimum threshold"
-                placeholder="0"
-                value={minThreshold}
-                onChange={(e) => setMinThreshold(e.target.value)}
-                className="w-32 h-9"
-              />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="maxThreshold" className="text-sm font-medium">Max</label>
-              <Input
-                id="maxThreshold"
-                type="number"
-                aria-label="Maximum threshold"
-                placeholder="100"
-                value={maxThreshold}
-                onChange={(e) => setMaxThreshold(e.target.value)}
-                className="w-32 h-9"
-              />
-            </div>
-            <Button onClick={handleSaveThresholds} className="h-9 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white">Save Thresholds</Button>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between text-xs text-soft-muted">
+            <span>Range: <span className="font-semibold text-soft">{tankRange[0]}% - {tankRange[1]}%</span></span>
           </div>
-          <div aria-live="polite" className="min-h-[20px] text-xs">
-            {thresholdError && (
-              <p className="text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {thresholdError}</p>
-            )}
+          <Slider
+            value={tankRange}
+            onValueChange={(v) => setTankRange(v as number[])}
+            min={0}
+            max={100}
+            step={1}
+            className="mt-2"
+          />
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>0%</span><span>100%</span>
           </div>
+          <div className="flex justify-end">
+            <Button
+              onClick={saveTank}
+              className="h-8 px-4 bg-[hsl(var(--navy))] hover:bg-[hsl(var(--navy-hover))] text-white text-xs"
+            >
+              Save Tank
+            </Button>
+          </div>
+          {savedTank && <p className="text-[10px] text-success text-right mt-1">Saved.</p>}
         </CardContent>
-      </Card>
+  </Card>
+  </div>
 
+      {/* Combined save removed; individual buttons per card */}
     </div>
   );
 }

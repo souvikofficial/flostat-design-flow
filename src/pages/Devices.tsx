@@ -11,13 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, QrCode, Search, Edit, Trash2, Building2 } from "lucide-react";
 
 const blocks = [
@@ -120,18 +113,9 @@ export default function Devices() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <Select defaultValue={device.block}>
-                    <SelectTrigger className="w-[120px] h-8 text-xs transition-smooth focus:shadow-soft-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {blocks.map((block) => (
-                        <SelectItem key={block.id} value={block.id}>
-                          {block.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <span className="text-xs font-medium px-2 py-1 rounded-md bg-[hsl(var(--navy))] text-white shadow-soft-sm">
+                    {blocks.find(b => b.id === device.block)?.name || device.block}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={device.status} />

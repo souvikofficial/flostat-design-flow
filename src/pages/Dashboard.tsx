@@ -111,6 +111,19 @@ const devices = [
     uptime: "45.3%",
     lastSync: "15 min ago",
   },
+  {
+    id: "sump-001",
+    name: "Main Sump S1",
+    type: "sump" as const,
+    status: "active" as const,
+    value: 3200, // raw level units (e.g. liters) converted to % in card using max threshold
+    unit: "L",
+    threshold: { min: 500, max: 5000 }, // max used for percent conversion; min retained for potential alerts
+    location: "Building B - Basement",
+    block: "block-b",
+    uptime: "99.1%",
+    lastSync: "3 min ago",
+  },
 ];
 
 const stats = [

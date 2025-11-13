@@ -9,19 +9,19 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, label, className }: StatusBadgeProps) {
   const statusConfig = {
     active: {
-      className: "bg-success text-success-foreground",
+      className: "bg-[hsl(var(--aqua))] text-white",
       defaultLabel: "Active",
     },
     inactive: {
-      className: "bg-muted text-muted-foreground",
+      className: "bg-[#4B5563] text-white",
       defaultLabel: "Inactive",
     },
     warning: {
-      className: "bg-warning text-warning-foreground",
+      className: "bg-warning text-white",
       defaultLabel: "Warning",
     },
     error: {
-      className: "bg-destructive text-destructive-foreground",
+      className: "bg-destructive text-white",
       defaultLabel: "Error",
     },
   };
@@ -31,12 +31,11 @@ export function StatusBadge({ status, label, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
         config.className,
         className
       )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
       {label || config.defaultLabel}
     </span>
   );

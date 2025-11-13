@@ -54,16 +54,24 @@ export default function Users() {
 
       {/* Role summary cards moved below search */}
       <div className="grid gap-4 md:grid-cols-4">
-        {Object.keys(roleColors).map((role) => {
+        {['Admin','Controller','Guest','Pending Request'].map((role) => {
           const count = users.filter((u) => u.role === role).length;
           const label = role === 'Pending Request' ? 'Pending Requests' : `${role}s`;
+          const isPending = role === 'Pending Request';
           return (
-            <div key={role} className="rounded-lg border bg-card p-4 shadow-elevation-1">
+            <div key={role} className={"rounded-lg border bg-card p-4 shadow-elevation-1 flex flex-col"}>
               <div className="flex items-center justify-between">
                 <div className="text-sm font-medium text-muted-foreground">{label}</div>
                 <Shield className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="mt-2 text-2xl font-bold">{count}</div>
+              <div className="mt-3">
+                <span
+                  className={"inline-flex items-center justify-center rounded-full font-bold text-sm h-10 w-10 " + (isPending ? "bg-[#C00000] text-white shadow-[0_0_0_6px_rgba(192,0,0,0.25)]" : "bg-muted text-soft")}
+                  aria-label={`${count} ${label}`}
+                >
+                  {count}
+                </span>
+              </div>
             </div>
           );
         })}

@@ -182,6 +182,50 @@ export default function Reports() {
           </ChartContainer>
         </CardContent>
       </Card>
+
+      {/* Valve State Card */}
+      <Card className="rounded-lg border border-border/50 bg-card shadow-soft-lg">
+        <CardHeader className="border-b bg-muted/30 py-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">Valve State</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-6 text-xs">
+            <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[hsl(var(--aqua))]"></span> Open</div>
+            <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/60"></span> Closed</div>
+            <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#C00000]"></span> Disconnected</div>
+          </div>
+          <div className="relative w-full h-6 rounded-full border overflow-hidden flex" aria-label="Valve timeline state demo">
+            <div className="h-full bg-muted-foreground/60" style={{ width: "55%" }} />
+            <div className="h-full bg-[hsl(var(--aqua))]" style={{ width: "30%" }} />
+            <div className="h-full bg-[#C00000]" style={{ width: "15%" }} />
+          </div>
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pump State Card */}
+      <Card className="rounded-lg border border-border/50 bg-card shadow-soft-lg">
+        <CardHeader className="border-b bg-muted/30 py-3">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">Pump State</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-6 text-xs">
+            <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[hsl(var(--aqua))]"></span> On</div>
+            <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-muted-foreground/60"></span> Off</div>
+            <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#C00000]"></span> Disconnected</div>
+          </div>
+          <div className="relative w-full h-6 rounded-full border overflow-hidden flex" aria-label="Pump timeline state demo">
+            <div className="h-full bg-[hsl(var(--aqua))]" style={{ width: "40%" }} />
+            <div className="h-full bg-muted-foreground/60" style={{ width: "45%" }} />
+            <div className="h-full bg-[#C00000]" style={{ width: "15%" }} />
+          </div>
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

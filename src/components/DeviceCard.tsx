@@ -33,6 +33,34 @@ export function DeviceCard({ name, type, status, value, unit, threshold, locatio
   const isActive = derivedStatus === "active";
   const nextActionLabel = type === "valve" ? (isOn ? "Close valve" : "Open valve") : (isOn ? "Turn power off" : "Turn power on");
 
+  // Tank-specific percent conversion and color classification
+  let displayValue = value;
+  let displayUnit = unit;
+  let tankPercent: number | null = null;
+  let tankLevelCategory: 'low' | 'normal' | 'high' | null = null;
+  // Sump-specific percent conversion and color classification
+  let sumpPercent: number | null = null;
+  let sumpLevelCategory: 'low' | 'normal' | 'high' | null = null;
+  if (type === 'tank') {
+    // If threshold provided treat max as 100%; else assume raw value already percent if <=100
+    const maxCap = threshold?.max && threshold.max > 0 ? threshold.max : 100;
+    tankPercent = Math.min(100, Math.round((value / maxCap) * 100));
+    displayValue = tankPercent;
+    displayUnit = '%';
+    if (tankPercent <= 25) tankLevelCategory = 'low';
+    else if (tankPercent >= 80) tankLevelCategory = 'high';
+    else tankLevelCategory = 'normal';
+  }
+  if (type === 'sump') {
+    const maxCap = threshold?.max && threshold.max > 0 ? threshold.max : 100;
+    sumpPercent = Math.min(100, Math.round((value / maxCap) * 100));
+    displayValue = sumpPercent;
+    displayUnit = '%';
+    if (sumpPercent <= 25) sumpLevelCategory = 'low';
+    else if (sumpPercent >= 80) sumpLevelCategory = 'high';
+    else sumpLevelCategory = 'normal';
+  }
+
   return (
     <Card className="shadow-elevation-2 hover:shadow-elevation-3 transition-shadow">
       <CardHeader className="pb-2">
@@ -52,41 +80,91 @@ export function DeviceCard({ name, type, status, value, unit, threshold, locatio
               <p className="text-xs text-muted-foreground mt-0.5">{location}</p>
             </div>
           </div>
-          <StatusBadge status={derivedStatus} />
+          <StatusBadge
+            status={derivedStatus}
+            label={type === 'tank' && tankLevelCategory ? (
+              tankLevelCategory === 'low' ? 'Low' : tankLevelCategory === 'normal' ? 'Normal' : 'High'
+            ) : undefined}
+            className={type === 'tank' && tankLevelCategory ? (
+              tankLevelCategory === 'low'
+                ? 'bg-[#C00000] text-white'
+                : tankLevelCategory === 'normal'
+                  ? 'bg-[#FFC107] text-white'
+                  : 'bg-[hsl(var(--aqua))] text-white'
+            ) : undefined}
+          />
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-baseline justify-between">
-          <div>
-            <span className="text-3xl font-bold">{value}</span>
-            <span className="ml-2 text-sm text-muted-foreground">{unit}</span>
-          </div>
-          <Badge variant="outline" className="text-xs">{type.toUpperCase()}</Badge>
+          {type !== 'valve' && (
+            <div>
+              <span className="text-3xl font-bold">{displayValue}</span>
+              <span className="ml-2 text-sm text-muted-foreground">{displayUnit}</span>
+            </div>
+          )}
+          <Badge
+            className={cn(
+              'text-xs flex items-center gap-1 font-medium rounded-full px-2 py-0.5 bg-[hsl(var(--navy))] text-white',
+              type === 'valve' && 'ml-auto'
+            )}
+            aria-label={type === 'sump' && sumpLevelCategory ? `Sump level ${sumpLevelCategory}` : undefined}
+          >
+            {type.toUpperCase()}
+            {type === 'tank' && tankLevelCategory && (
+              <span
+                className={cn(
+                  'ml-1 inline-block h-2 w-2 rounded-full',
+                  tankLevelCategory === 'low' && 'bg-[#C00000]',
+                  tankLevelCategory === 'normal' && 'bg-[#FFC107]',
+                  tankLevelCategory === 'high' && 'bg-[hsl(var(--aqua))]'
+                )}
+                aria-label={`Tank level ${tankLevelCategory}`}
+              />
+            )}
+          </Badge>
         </div>
 
-        {threshold && (
+        {threshold && type !== 'tank' && type !== 'valve' && type !== 'pump' && type !== 'sump' && (
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Min: {threshold.min}</span>
               <span>Max: {threshold.max}</span>
             </div>
             <div className="h-3 bg-muted rounded-full overflow-hidden">
-              <div 
+              <div
                 className={cn(
-                  "h-full transition-all",
-                  value >= threshold.min && value <= threshold.max 
-                    ? "bg-success" 
-                    : "bg-warning"
+                  'h-full transition-all',
+                  value >= threshold.min && value <= threshold.max ? 'bg-success' : 'bg-warning'
                 )}
                 style={{ width: `${Math.min((value / threshold.max) * 100, 100)}%` }}
               />
             </div>
           </div>
         )}
+        {type === 'tank' && tankPercent !== null && (
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Low</span>
+              <span>High</span>
+            </div>
+            <div className="h-3 bg-muted rounded-full overflow-hidden" aria-label={`Tank level ${tankPercent}%`}>
+              <div
+                className={cn(
+                  'h-full transition-all',
+                  tankLevelCategory === 'low' && 'bg-[#C00000]',
+                  tankLevelCategory === 'normal' && 'bg-[#FFC107]',
+                  tankLevelCategory === 'high' && 'bg-[hsl(var(--aqua))]'
+                )}
+                style={{ width: `${tankPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         {type !== "tank" && (
-          <div className="flex items-center justify-between border rounded-md p-2.5">
-            <span className="text-sm font-medium">{type === "valve" ? "Valve" : "Power"}</span>
+          <div className="flex items-center justify-between border rounded-md p-2.5 bg-card">
+            <span className="text-sm font-medium text-soft">{type === "valve" ? "Valve" : "Power"}</span>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
                 {isOn ? (type === "valve" ? "OPEN" : "ON") : (type === "valve" ? "CLOSED" : "OFF")}
@@ -102,7 +180,13 @@ export function DeviceCard({ name, type, status, value, unit, threshold, locatio
 
         {/* Live region for assistive tech announcing status changes */}
         <span className="sr-only" aria-live="polite">
-          {name} status {derivedStatus}
+          {type === 'tank' && tankLevelCategory ? (
+            `${name} level ${tankLevelCategory}`
+          ) : type === 'sump' && sumpLevelCategory ? (
+            `${name} level ${sumpLevelCategory}`
+          ) : (
+            `${name} status ${derivedStatus}`
+          )}
         </span>
 
         {/* Details button removed per request */}
