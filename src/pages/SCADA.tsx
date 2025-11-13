@@ -14,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const tanks = [
   { id: 1, name: "Tank 4", level: 1, status: "error" as const, position: { top: 20, left: 8 } },
@@ -69,7 +71,8 @@ export default function SCADA() {
   const [devices, setDevices] = useState(initialDevices);
   const [selectedDevice, setSelectedDevice] = useState<typeof initialDevices[0] | null>(null);
   const [selectedBlock, setSelectedBlock] = useState<string>("all");
-  const [mode, setMode] = useState<string>("all");
+  // SCADA operating mode: 'auto' disables manual device interaction; 'manual' enables it.
+  const [scadaMode, setScadaMode] = useState<'auto' | 'manual'>("auto");
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   const toggleExpand = (id: number) => {
@@ -114,16 +117,21 @@ export default function SCADA() {
           </div>
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Mode:</label>
-            <Select value={mode} onValueChange={setMode}>
-              <SelectTrigger className="w-[120px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Blocks</SelectItem>
-                <SelectItem value="monitoring">Monitoring</SelectItem>
-                <SelectItem value="control">Control</SelectItem>
-              </SelectContent>
-            </Select>
+            <ToggleGroup
+              type="single"
+              value={scadaMode}
+              onValueChange={(val) => val && setScadaMode(val as 'auto' | 'manual')}
+              className="bg-muted/40 rounded-md p-0.5 border"
+            >
+              <ToggleGroupItem
+                value="auto"
+                className="data-[state=on]:bg-[hsl(var(--aqua))] data-[state=on]:text-white text-xs h-8 px-3"
+              >Auto</ToggleGroupItem>
+              <ToggleGroupItem
+                value="manual"
+                className="data-[state=on]:bg-[hsl(var(--aqua))] data-[state=on]:text-white text-xs h-8 px-3"
+              >Manual</ToggleGroupItem>
+            </ToggleGroup>
           </div>
         </div>
       </div>
@@ -291,13 +299,20 @@ export default function SCADA() {
             <CardContent className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
               {devices.map(device => {
                 const isExpanded = expanded.has(device.id);
+                const interactionDisabled = scadaMode === 'auto';
+                const panelId = `device-panel-${device.id}`;
                 return (
-                  <div key={device.id} className={`border rounded-md transition-all ${selectedDevice?.id === device.id ? 'ring-2 ring-[hsl(var(--aqua))] bg-muted/40' : 'bg-card'} hover:bg-muted/30`}> 
+                  <div
+                    key={device.id}
+                    className={`border rounded-md transition-all ${selectedDevice?.id === device.id ? 'ring-2 ring-[hsl(var(--aqua))] bg-muted/40' : 'bg-card'} hover:bg-muted/30 ${interactionDisabled ? 'opacity-60' : ''}`}
+                  > 
                     {/* Header Row */}
                     <button
                       type="button"
                       onClick={() => { toggleExpand(device.id); setSelectedDevice(device); }}
                       className="w-full flex items-center justify-between px-3 py-2"
+                      aria-expanded={isExpanded}
+                      aria-controls={panelId}
                     >
                       <div className="flex items-center gap-2 text-left">
                         {device.type === 'pump' && <Droplets className="h-4 w-4 text-[hsl(var(--aqua))]" />}
@@ -310,7 +325,23 @@ export default function SCADA() {
                         {(device.type === 'pump' || device.type === 'valve') && (
                           <div className="flex items-center gap-1">
                             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{device.isOn ? (device.type === 'pump' ? 'RUN' : 'OPEN') : (device.type === 'pump' ? 'STOP' : 'CLOSE')}</span>
-                            <Switch checked={device.isOn} onCheckedChange={() => togglePower(device.id)} />
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Switch
+                                      checked={device.isOn}
+                                      onCheckedChange={() => togglePower(device.id)}
+                                      disabled={interactionDisabled}
+                                      aria-label={interactionDisabled ? 'Disabled in Auto mode' : (device.type === 'pump' ? (device.isOn ? 'Turn pump off' : 'Turn pump on') : (device.isOn ? 'Close valve' : 'Open valve'))}
+                                    />
+                                  </span>
+                                </TooltipTrigger>
+                                {interactionDisabled && (
+                                  <TooltipContent>Manual controls disabled in Auto mode</TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         )}
                         <Badge
@@ -324,7 +355,7 @@ export default function SCADA() {
                     </button>
                     {/* Expanded Content */}
                     {isExpanded && (
-                      <div className="px-3 pb-3 space-y-2 text-xs animate-slideUp">
+                      <div id={panelId} role="region" aria-label={`${device.name} details`} className="px-3 pb-3 space-y-2 text-xs animate-slideUp">
                         <div className="flex items-center gap-3 flex-wrap">
                           <div className="flex items-baseline gap-1.5">
                             <span className="font-semibold text-sm">Value:</span>
@@ -342,7 +373,25 @@ export default function SCADA() {
                         {device.type === 'pump' && (
                           <div className="pt-1">
                             <div className="text-[10px] font-medium text-muted-foreground mb-1">Speed Control (simulated)</div>
-                            <Slider defaultValue={[device.value ? Math.min(100, Math.round(device.value / 3200 * 100)) : 0]} max={100} step={5} className="w-[140px]" />
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Slider
+                                      defaultValue={[device.value ? Math.min(100, Math.round(device.value / 3200 * 100)) : 0]}
+                                      max={100}
+                                      step={5}
+                                      className="w-[140px]"
+                                      disabled={interactionDisabled}
+                                      aria-label={interactionDisabled ? 'Disabled in Auto mode' : 'Adjust pump speed'}
+                                    />
+                                  </span>
+                                </TooltipTrigger>
+                                {interactionDisabled && (
+                                  <TooltipContent>Manual controls disabled in Auto mode</TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         )}
                       </div>

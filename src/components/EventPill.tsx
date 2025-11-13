@@ -20,7 +20,8 @@ interface EventPillProps {
 }
 
 const statusColors: Record<EventStatus, string> = {
-  scheduled: "bg-[hsl(220,70%,62%)] hover:bg-[hsl(220,70%,58%)] active:bg-[hsl(220,70%,54%)] border-[hsl(220,70%,52%)]", // Softer Indigo for scheduled
+  // Scheduled: navy via theme tokens
+  scheduled: "bg-[hsl(var(--navy))] hover:bg-[hsl(var(--navy-hover))] active:bg-[hsl(var(--navy))]/90 border-[hsl(var(--navy))]",
   active: "bg-success/90 hover:bg-success/80 active:bg-success/70 border-success/80",
   completed: "bg-muted hover:bg-muted/90 active:bg-muted/80 border-muted-foreground/50",
   cancelled: "bg-destructive/90 hover:bg-destructive/80 active:bg-destructive/70 border-destructive/80",

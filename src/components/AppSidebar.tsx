@@ -6,7 +6,9 @@ import {
   FileText, 
   BarChart3,
   ScanText,
-  Activity
+  Activity,
+  Settings as SettingsIcon,
+  LogOut
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
@@ -22,6 +24,7 @@ import {
   SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { NavLink as RouterLink } from "react-router-dom";
 
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -75,9 +78,37 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {/* Settings link moved to bottom section */}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {/* Profile / Sign out section at bottom */}
+        <div className="mt-auto p-3 border-t border-sidebar-border space-y-2">
+          {/* Profile (non-link) */}
+          <div className="flex items-center gap-3 px-3 py-2 rounded-md text-sidebar-foreground/80">
+            <div className="h-8 w-8 rounded-full bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center font-semibold">FG</div>
+            {open && (
+              <div className="flex-1">
+                <div className="text-sm font-medium">Souvik Ghosh</div>
+                <div className="text-xs text-sidebar-foreground/70">Admin</div>
+              </div>
+            )}
+          </div>
+          {/* Settings (at bottom) */}
+          <NavLink 
+            to="/settings" 
+            className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sidebar-foreground/80"
+            activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+          >
+            <SettingsIcon className="h-5 w-5" />
+            {open && <span>Settings</span>}
+          </NavLink>
+          {/* Sign out */}
+          <button onClick={() => console.log('Sign out')} className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-left text-sidebar-foreground/80">
+            <LogOut className="h-5 w-5" />
+            {open && <span>Sign out</span>}
+          </button>
+        </div>
       </SidebarContent>
     </Sidebar>
   );

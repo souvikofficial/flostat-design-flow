@@ -13,20 +13,20 @@ import { Plus, Search, Edit, Trash2, Mail, Shield } from "lucide-react";
 
 const roleColors = {
   Admin: "bg-destructive/10 text-destructive border-destructive/20",
-  Root: "bg-warning/10 text-warning border-warning/20",
+  "Pending Request": "bg-warning/10 text-warning border-warning/20",
   Controller: "bg-aqua/10 text-aqua border-aqua/20",
   Guest: "bg-muted text-muted-foreground border-border",
-};
+} as const;
 
 const users = [
   { id: "USR-001", name: "John Martinez", email: "john.m@flostat.io", role: "Admin" as const, lastActive: "Active now", department: "Operations" },
-  { id: "USR-002", name: "Sarah Chen", email: "sarah.c@flostat.io", role: "Root" as const, lastActive: "5 min ago", department: "Engineering" },
+  { id: "USR-002", name: "Sarah Chen", email: "sarah.c@flostat.io", role: "Pending Request" as const, lastActive: "5 min ago", department: "Engineering" },
   { id: "USR-003", name: "Michael Roberts", email: "michael.r@flostat.io", role: "Controller" as const, lastActive: "15 min ago", department: "Maintenance" },
   { id: "USR-004", name: "Emily Davis", email: "emily.d@flostat.io", role: "Controller" as const, lastActive: "1 hour ago", department: "Operations" },
   { id: "USR-005", name: "David Kim", email: "david.k@flostat.io", role: "Admin" as const, lastActive: "2 hours ago", department: "IT" },
   { id: "USR-006", name: "Lisa Anderson", email: "lisa.a@flostat.io", role: "Guest" as const, lastActive: "1 day ago", department: "Visitor" },
   { id: "USR-007", name: "James Wilson", email: "james.w@flostat.io", role: "Controller" as const, lastActive: "3 hours ago", department: "Quality Control" },
-];
+] as const;
 
 export default function Users() {
   return (
@@ -50,6 +50,23 @@ export default function Users() {
             className="pl-9"
           />
         </div>
+      </div>
+
+      {/* Role summary cards moved below search */}
+      <div className="grid gap-4 md:grid-cols-4">
+        {Object.keys(roleColors).map((role) => {
+          const count = users.filter((u) => u.role === role).length;
+          const label = role === 'Pending Request' ? 'Pending Requests' : `${role}s`;
+          return (
+            <div key={role} className="rounded-lg border bg-card p-4 shadow-elevation-1">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-muted-foreground">{label}</div>
+                <Shield className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="mt-2 text-2xl font-bold">{count}</div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="rounded-lg border bg-card shadow-elevation-2">
@@ -89,8 +106,8 @@ export default function Users() {
                     <Button variant="ghost" size="icon">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                    <Button variant="destructive" size="icon">
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
@@ -100,20 +117,7 @@ export default function Users() {
         </Table>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        {Object.entries(roleColors).map(([role]) => {
-          const count = users.filter((u) => u.role === role).length;
-          return (
-            <div key={role} className="rounded-lg border bg-card p-4 shadow-elevation-1">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-muted-foreground">{role}s</div>
-                <Shield className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div className="mt-2 text-2xl font-bold">{count}</div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Summary cards moved above; removed from bottom */}
     </div>
   );
 }

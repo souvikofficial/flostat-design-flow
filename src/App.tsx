@@ -12,6 +12,7 @@ import Schedule from "./pages/Schedule";
 import Logs from "./pages/Logs";
 import Reports from "./pages/Reports";
 import OCR from "./pages/OCR";
+import Settings from "./pages/Settings";
 import SCADA from "./pages/SCADA";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +42,7 @@ const App = () => (
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/ocr" element={<OCR />} />
                   <Route path="/scada" element={<SCADA />} />
+                  <Route path="/settings" element={<Settings />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>

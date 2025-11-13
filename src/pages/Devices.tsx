@@ -67,12 +67,12 @@ export default function Devices() {
             <Plus className="h-4 w-4" />
             Create Device
           </Button>
-          <Button className="gap-2 h-10 bg-success/90 hover:bg-success/80 text-white shadow-soft-sm hover:shadow-soft-md transition-smooth hover:-translate-y-0.5">
+          <Button className="gap-2 h-10 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white shadow-soft-sm hover:shadow-soft-md transition-smooth hover:-translate-y-0.5">
             <QrCode className="h-4 w-4" />
             QR Register
           </Button>
           <Button
-            className="gap-2 h-10 bg-destructive/90 hover:bg-destructive/80 text-white shadow-soft-sm hover:shadow-soft-md transition-smooth hover:-translate-y-0.5"
+            className="gap-2 h-10 bg-[hsl(var(--navy))] hover:bg-[hsl(var(--navy-hover))] text-white shadow-soft-sm hover:shadow-soft-md transition-smooth hover:-translate-y-0.5"
             onClick={() => setCreateBlockOpen(true)}
           >
             <Building2 className="h-4 w-4" />
@@ -91,7 +91,7 @@ export default function Devices() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-soft-muted" />
           <Input
-            placeholder="Search devices by name, ID, or location..."
+            placeholder="Search devices by name or ID..."
             className="pl-9 transition-smooth focus:shadow-soft-md"
           />
         </div>
@@ -105,9 +105,7 @@ export default function Devices() {
               <TableHead className="font-semibold text-soft">Name</TableHead>
               <TableHead className="font-semibold text-soft">Type</TableHead>
               <TableHead className="font-semibold text-soft">Block</TableHead>
-              <TableHead className="font-semibold text-soft">Location</TableHead>
               <TableHead className="font-semibold text-soft">Status</TableHead>
-              <TableHead className="font-semibold text-soft">Last Seen</TableHead>
               <TableHead className="text-right font-semibold text-soft">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -135,11 +133,9 @@ export default function Devices() {
                     </SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell className="text-soft-muted">{device.location}</TableCell>
                 <TableCell>
                   <StatusBadge status={device.status} />
                 </TableCell>
-                <TableCell className="text-sm text-soft-muted">{device.lastSeen}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="icon" className="hover:shadow-soft-sm transition-smooth">
