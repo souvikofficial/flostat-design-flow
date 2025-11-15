@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,29 +21,25 @@ import {
 } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Download } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { api } from "@/lib/api";
 
-const reports = [
-  { id: "092ab42a-7190-4c79-a08a-9ce182a75fa1", deviceType: "Pump", status: "ON", level: null, lastUpdated: "11/10/2025, 10:20:30 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "092ab42a-7190-4c79-a08a-9ce182a75fa1", deviceType: "Pump", status: "OFF", level: null, lastUpdated: "11/10/2025, 10:19:29 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "092ab42a-7190-4c79-a08a-9ce182a75fa1", deviceType: "Pump", status: "ON", level: null, lastUpdated: "11/10/2025, 8:37:24 PM", updatedBy: "ahmedsyedsonal176@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "70%", lastUpdated: "11/8/2025, 3:20:15 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "70%", lastUpdated: "11/8/2025, 3:20:15 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "75%", lastUpdated: "11/8/2025, 3:20:10 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "75%", lastUpdated: "11/8/2025, 3:20:10 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "78%", lastUpdated: "11/8/2025, 3:20:03 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "78%", lastUpdated: "11/8/2025, 3:20:03 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "1e0514a2-38b1-4e50-adc4-6eb05b445bf9", deviceType: "Pump", status: "OFF", level: null, lastUpdated: "11/8/2025, 3:19:06 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "80%", lastUpdated: "11/8/2025, 3:19:06 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "80%", lastUpdated: "11/8/2025, 3:19:06 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "70%", lastUpdated: "11/8/2025, 3:19:00 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "70%", lastUpdated: "11/8/2025, 3:19:00 PM", updatedBy: "hrnh6531@gmail.com" },
-  { id: "9d3f2c6a-5452-4910-a59e-d4ecd15c66ba", deviceType: "Tank", status: null, level: "60%", lastUpdated: "11/8/2025, 3:18:53 PM", updatedBy: "hrnh6531@gmail.com" },
-];
+interface ReportItem {
+  id: string;
+  deviceType: string;
+  status: string | null;
+  level: string | null;
+  lastUpdated: string;
+  updatedBy: string;
+}
 
 export default function Reports() {
   const [selectedTank, setSelectedTank] = useState("tank-1");
   const [selectedDate, setSelectedDate] = useState("");
+  const [reports, setReports] = useState<ReportItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   // Demo time series (aggregated tank levels) for chart
   const levelSeries = useMemo(
@@ -65,6 +61,62 @@ export default function Reports() {
     tank1: { label: "Tank 1", color: "hsl(192 100% 42%)" },
     tank2: { label: "Tank 2", color: "hsl(220 70% 62%)" },
     tank3: { label: "Tank 3", color: "hsl(142 65% 40%)" },
+  };
+
+  // Fetch reports from the backend
+  const fetchReports = async () => {
+    setLoading(true);
+    try {
+      // Get org_id from localStorage
+      const orgId = localStorage.getItem('currentOrgId');
+      if (!orgId) {
+        toast({
+          title: "Error",
+          description: "No organization selected. Please select an organization first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // For now, we'll use a placeholder tank ID
+      // In a real implementation, you would get the actual tank ID based on the selection
+      const tankId = "placeholder-tank-id";
+      
+      const response = await api.reports.getAll();
+      
+      if (response.success) {
+        // Transform the data to match our interface
+        const transformedReports = response.data?.map((report: any) => ({
+          id: report.device_id || "N/A",
+          deviceType: report.device_type || "Unknown",
+          status: report.status || null,
+          level: report.level || null,
+          lastUpdated: report.last_updated || "N/A",
+          updatedBy: report.updated_by || "Unknown",
+        })) || [];
+        
+        setReports(transformedReports);
+        toast({
+          title: "Success",
+          description: "Reports fetched successfully.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to fetch reports",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error fetching reports:", error);
+      toast({
+        title: "Error",
+        description: error.message || "An unexpected error occurred while fetching reports",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredReports = reports; // simple pass-through to match screenshot layout
@@ -93,15 +145,30 @@ export default function Reports() {
           <div className="flex flex-col gap-1">
             <label className="text-xs text-soft-muted">Select Date</label>
             <Input
-              placeholder="mm/dd/yyyy"
+              type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="h-9 w-[140px]"
             />
           </div>
-          <Button className="h-9 px-3 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white shadow-soft-sm">Fetch Data</Button>
+          <Button 
+            className="h-9 px-3 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white shadow-soft-sm"
+            onClick={fetchReports}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Fetching...
+              </>
+            ) : (
+              "Fetch Data"
+            )}
+          </Button>
         </div>
-        <Button className="h-9 gap-2 bg-[hsl(var(--navy))] hover:bg-[hsl(var(--navy-hover))] text-white"><Download className="h-4 w-4" /> Download PDF</Button>
+        <Button className="h-9 gap-2 bg-[hsl(var(--navy))] hover:bg-[hsl(var(--navy-hover))] text-white">
+          <Download className="h-4 w-4" /> Download PDF
+        </Button>
       </div>
 
       {/* Reports Table */}

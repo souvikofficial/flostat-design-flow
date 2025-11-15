@@ -52,6 +52,7 @@ function AppShell() {
           <main className="flex-1 p-6 overflow-auto">
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/org/:orgId" element={<Dashboard />} />
               <Route path="/devices" element={<Devices />} />
               <Route path="/users" element={<Users />} />
               <Route path="/schedule" element={<Schedule />} />

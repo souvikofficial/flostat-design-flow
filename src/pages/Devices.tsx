@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CreateBlockModal } from "@/components/CreateBlockModal";
+import { CreateDeviceModal } from "@/components/CreateDeviceModal";
 import {
   Table,
   TableBody,
@@ -12,6 +13,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, QrCode, Search, Edit, Trash2, Building2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { api } from "@/lib/api";
 
 const blocks = [
   { id: "block-a", name: "Block A" },
@@ -36,6 +39,16 @@ const devices = [
 
 export default function Devices() {
   const [createBlockOpen, setCreateBlockOpen] = useState(false);
+  const [createDeviceOpen, setCreateDeviceOpen] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Get org_id from localStorage or context
+  useEffect(() => {
+    // Get the current org_id from localStorage
+    const storedOrgId = localStorage.getItem('currentOrgId');
+    setOrgId(storedOrgId);
+  }, []);
 
   const handleCreateBlock = (block: {
     name: string;
@@ -44,6 +57,77 @@ export default function Devices() {
   }) => {
     console.log("Creating block:", block);
     // Handle block creation
+    toast({
+      title: "Block Created",
+      description: `Block "${block.name}" has been created successfully.`,
+    });
+  };
+
+  const handleCreateDevice = async (device: {
+    device_type: string;
+    name: string;
+    description: string;
+    block_id: string;
+  }) => {
+    try {
+      // Check if user is authenticated
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to create devices",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check if org_id is available
+      if (!orgId) {
+        toast({
+          title: "Organization Error",
+          description: "Organization ID is missing. Please select an organization first.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log("Creating device with data:", { device_type: device.device_type, org_id: orgId });
+      console.log("Auth token:", token ? "Present" : "Missing");
+      
+      const response = await api.devices.create({
+        device_type: device.device_type,
+        org_id: orgId
+      });
+      
+      console.log("Device creation response:", response);
+      
+      if (response.success) {
+        toast({
+          title: "Device Created",
+          description: `Device has been created successfully.`,
+        });
+        
+        // Close the modal
+        setCreateDeviceOpen(false);
+        
+        // In a real implementation, you would:
+        // 1. Update the devices list by fetching from the API
+        // 2. Show the device in blocks and dashboard
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to create device",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error creating device:", error);
+      toast({
+        title: "Error",
+        description: error.message || "An unexpected error occurred while creating the device",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -52,10 +136,14 @@ export default function Devices() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-soft">Device Management</h1>
           <p className="text-soft-muted mt-1">Manage and monitor all connected devices</p>
+          {orgId && (
+            <p className="text-sm text-muted-foreground">Current Organization: {orgId}</p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button 
             className="gap-2 h-10 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white shadow-soft-sm hover:shadow-soft-md transition-smooth hover:-translate-y-0.5"
+            onClick={() => setCreateDeviceOpen(true)}
           >
             <Plus className="h-4 w-4" />
             Create Device
@@ -78,6 +166,12 @@ export default function Devices() {
         open={createBlockOpen}
         onOpenChange={setCreateBlockOpen}
         onCreateBlock={handleCreateBlock}
+      />
+      
+      <CreateDeviceModal
+        open={createDeviceOpen}
+        onOpenChange={setCreateDeviceOpen}
+        onCreateDevice={handleCreateDevice}
       />
 
       <div className="flex items-center gap-4">
