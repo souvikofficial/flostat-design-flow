@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { DeviceCard } from "@/components/DeviceCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -144,6 +145,7 @@ const getStatusBadge = (status: string) => {
 };
 
 export default function Dashboard() {
+  const { orgId } = useParams<{ orgId: string }>();
   const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
   const [multiTypes, setMultiTypes] = useState<string[]>([]); // multi device types
   const [minThreshold, setMinThreshold] = useState("");
@@ -213,7 +215,12 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          {orgId && (
+            <p className="text-sm text-muted-foreground">Organization ID: {orgId}</p>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Select Block:</label>
           <Select value={selectedBlocks.length === 0 ? "all" : selectedBlocks[0]} onValueChange={(value) => setSelectedBlocks(value === "all" ? [] : [value])}>

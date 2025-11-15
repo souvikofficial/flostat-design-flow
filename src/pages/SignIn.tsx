@@ -1,15 +1,161 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Mail, Lock, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { api } from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Dynamically load Google Identity Services script
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    
+    script.onload = () => {
+      initializeGoogleSignIn();
+    };
+    
+    script.onerror = () => {
+      console.error("Failed to load Google Identity Services");
+    };
+    
+    document.head.appendChild(script);
+
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
+
+  const initializeGoogleSignIn = () => {
+    if (window.google && window.google.accounts && googleButtonRef.current) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "350316183770-2v6n03apts1gaf0q2pkt29n5mkkm3oiq.apps.googleusercontent.com",
+        callback: handleGoogleSignIn,
+        use_fedcm_for_prompt: true,
+      });
+
+      window.google.accounts.id.renderButton(
+        googleButtonRef.current,
+        { 
+          theme: "outline", 
+          size: "large",
+          width: 250,
+          text: "continue_with"
+        }
+      );
+    }
+  };
+
+  const handleGoogleSignIn = async (response: any) => {
+    setGoogleLoading(true);
+    try {
+      console.log('Google Sign-In response received:', response);
+      
+      // Check if we received a credential
+      if (!response.credential) {
+        throw new Error("No credential received from Google Sign-In");
+      }
+      
+      const res = await api.auth.googleOuth({ tokenId: response.credential });
+      console.log('Backend response:', res);
+      
+      if (res.success) {
+        // Store token in localStorage for future requests
+        if (res.token) {
+          localStorage.setItem('authToken', typeof res.token === 'string' ? res.token : JSON.stringify(res.token));
+        }
+        
+        toast({
+          title: "Success",
+          description: "Signed in with Google successfully",
+        });
+        
+        // Navigate to organizations page after successful sign in
+        navigate('/organizations');
+      } else {
+        toast({
+          title: "Error",
+          description: res.message || "Failed to sign in with Google",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Google Sign-In error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "An unexpected error occurred during Google sign in",
+        variant: "destructive",
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please enter both email and password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await api.auth.login({ email, password });
+      
+      if (response.success) {
+        // Store token in localStorage for future requests
+        if (response.token) {
+          localStorage.setItem('authToken', typeof response.token === 'string' ? response.token : JSON.stringify(response.token));
+        }
+        
+        toast({
+          title: "Success",
+          description: "Signed in successfully",
+        });
+        
+        // Navigate to organizations page after successful sign in
+        navigate('/organizations');
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to sign in",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-[70vh] w-full flex items-center justify-center">
@@ -55,9 +201,19 @@ export default function SignIn() {
               <a className="text-xs text-[hsl(var(--aqua))] hover:underline" href="#">Forgot password?</a>
             </div>
           </div>
-          <Button className="w-full h-9 gap-2 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white font-medium" onClick={() => navigate('/organizations')}>
-            <LogIn className="h-4 w-4" />
-            Sign In
+          <Button 
+            className="w-full h-9 gap-2 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white font-medium" 
+            onClick={handleSignIn}
+            disabled={loading}
+          >
+            {loading ? (
+              "Signing in..."
+            ) : (
+              <>
+                <LogIn className="h-4 w-4" />
+                Sign In
+              </>
+            )}
           </Button>
           <div className="relative my-2">
             <div className="absolute inset-0 flex items-center">
@@ -67,17 +223,15 @@ export default function SignIn() {
               <span className="bg-card px-2 text-muted-foreground">OR</span>
             </div>
           </div>
-          <Button className="w-full h-9 gap-2 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white">
-            <svg className="h-4 w-4" viewBox="0 0 24 24">
-              <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Continue with Google
-          </Button>
+          <div ref={googleButtonRef} className="flex justify-center">
+            {googleLoading && (
+              <div className="flex items-center justify-center w-full h-10">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[hsl(var(--aqua))]"></div>
+              </div>
+            )}
+          </div>
           <p className="text-center text-xs text-muted-foreground">
-            Don’t have an account? <a className="text-[hsl(var(--aqua))] hover:underline" href="/signup">Sign up</a>
+            Don't have an account? <a className="text-[hsl(var(--aqua))] hover:underline" href="/signup">Sign up</a>
           </p>
         </CardContent>
       </Card>

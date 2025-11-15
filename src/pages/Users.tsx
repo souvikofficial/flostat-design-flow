@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Search, Edit, Trash2, Mail, Shield } from "lucide-react";
+import { api } from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
 
 const roleColors = {
   Admin: "bg-destructive/10 text-destructive border-destructive/20",
@@ -18,17 +21,115 @@ const roleColors = {
   Guest: "bg-muted text-muted-foreground border-border",
 } as const;
 
-const users = [
-  { id: "USR-001", name: "John Martinez", email: "john.m@flostat.io", role: "Admin" as const, lastActive: "Active now", department: "Operations" },
-  { id: "USR-002", name: "Sarah Chen", email: "sarah.c@flostat.io", role: "Pending Request" as const, lastActive: "5 min ago", department: "Engineering" },
-  { id: "USR-003", name: "Michael Roberts", email: "michael.r@flostat.io", role: "Controller" as const, lastActive: "15 min ago", department: "Maintenance" },
-  { id: "USR-004", name: "Emily Davis", email: "emily.d@flostat.io", role: "Controller" as const, lastActive: "1 hour ago", department: "Operations" },
-  { id: "USR-005", name: "David Kim", email: "david.k@flostat.io", role: "Admin" as const, lastActive: "2 hours ago", department: "IT" },
-  { id: "USR-006", name: "Lisa Anderson", email: "lisa.a@flostat.io", role: "Guest" as const, lastActive: "1 day ago", department: "Visitor" },
-  { id: "USR-007", name: "James Wilson", email: "james.w@flostat.io", role: "Controller" as const, lastActive: "3 hours ago", department: "Quality Control" },
-] as const;
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  lastActive?: string;
+  department?: string;
+}
 
 export default function Users() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.users.getAll();
+      if (response.success) {
+        // Transform the data to match the expected format
+        const transformedUsers = response.users.map((user: any) => ({
+          id: user.id || user.email,
+          email: user.email,
+          name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role || "Pending Request",
+          lastActive: user.lastActive || "Recently",
+          department: user.department || "Not specified"
+        }));
+        setUsers(transformedUsers);
+      } else {
+        setError(response.message || "Failed to fetch users");
+        toast({
+          title: "Error",
+          description: response.message || "Failed to fetch users",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      setError(error.message || "Failed to fetch users");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch users",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredUsers = users.filter(user => 
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+            <p className="text-muted-foreground mt-1">Manage system users and their roles</p>
+          </div>
+          <Button variant="aqua" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add User
+          </Button>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <p>Loading users...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+            <p className="text-muted-foreground mt-1">Manage system users and their roles</p>
+          </div>
+          <Button variant="aqua" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add User
+          </Button>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-red-500 mb-2">Error: {error}</p>
+            <Button onClick={fetchUsers}>Retry</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -48,6 +149,8 @@ export default function Users() {
           <Input
             placeholder="Search users by name or email..."
             className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
@@ -55,7 +158,7 @@ export default function Users() {
       {/* Role summary cards moved below search */}
       <div className="grid gap-4 md:grid-cols-4">
         {['Admin','Controller','Guest','Pending Request'].map((role) => {
-          const count = users.filter((u) => u.role === role).length;
+          const count = filteredUsers.filter((u) => u.role === role).length;
           const label = role === 'Pending Request' ? 'Pending Requests' : `${role}s`;
           const isPending = role === 'Pending Request';
           return (
@@ -91,7 +194,7 @@ export default function Users() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <TableRow key={user.id} className="hover:bg-muted/30">
                 <TableCell className="font-mono text-sm">{user.id}</TableCell>
                 <TableCell className="font-medium">{user.name}</TableCell>
@@ -102,13 +205,13 @@ export default function Users() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={roleColors[user.role]}>
+                  <Badge variant="outline" className={roleColors[user.role || "Pending Request"]}>
                     <Shield className="mr-1 h-3 w-3" />
-                    {user.role}
+                    {user.role || "Pending Request"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{user.department}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{user.lastActive}</TableCell>
+                <TableCell className="text-muted-foreground">{user.department || "Not specified"}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{user.lastActive || "Recently"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="icon">

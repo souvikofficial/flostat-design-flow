@@ -1,31 +1,124 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
+import { api } from "@/lib/api";
 
 interface Org {
-  id: string;
-  name: string;
-  description?: string;
+  org_id: string;
+  orgName: string;
+  orgDesc?: string;
   location?: string;
 }
 
 export default function Organizations() {
   const [open, setOpen] = useState(false);
   const [orgs, setOrgs] = useState<Org[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [loc, setLoc] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const onCreate = () => {
-    if (!name.trim()) return;
-    setOrgs((prev) => [...prev, { id: Math.random().toString(36).slice(2), name, description: desc, location: loc }]);
-    setName(""); setDesc(""); setLoc(""); setOpen(false);
+  // Fetch organizations when component mounts
+  useEffect(() => {
+    fetchOrganizations();
+  }, []);
+
+  const fetchOrganizations = async () => {
+    try {
+      setLoading(true);
+      const response = await api.organizations.getUserOrgs();
+      if (response.success) {
+        // Transform the data to match our interface
+        const transformedOrgs = response.orgs?.map((org: any) => ({
+          org_id: org.org_id,
+          orgName: org.orgName || org.name,
+          orgDesc: org.orgDesc || org.description,
+          location: org.location
+        })) || [];
+        setOrgs(transformedOrgs);
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to fetch organizations",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error fetching organizations:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch organizations",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const onCreate = async () => {
+    if (!name.trim()) return;
+    
+    try {
+      const response = await api.organizations.create({
+        orgName: name,
+        orgDesc: desc,
+        location: loc
+      });
+      
+      if (response.success) {
+        // Refresh the organizations list
+        await fetchOrganizations();
+        
+        setName("");
+        setDesc("");
+        setLoc("");
+        setOpen(false);
+        
+        toast({
+          title: "Organization Created",
+          description: `Organization "${name}" created successfully.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to create organization",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error creating organization:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create organization",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEnterDashboard = (orgId: string) => {
+    // Store the current organization ID in localStorage
+    localStorage.setItem('currentOrgId', orgId);
+    // Navigate to the organization dashboard
+    navigate(`/org/${orgId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fadeIn">
+        <h1 className="text-2xl font-semibold tracking-tight text-center">Your Organizations</h1>
+        <div className="flex justify-center items-center h-64">
+          <p>Loading organizations...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -42,14 +135,22 @@ export default function Organizations() {
 
         {/* Existing orgs */}
         {orgs.map((o) => (
-          <Card key={o.id} className="shadow-soft-sm">
+          <Card key={o.org_id} className="shadow-soft-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{o.name}</CardTitle>
+              <CardTitle className="text-base">{o.orgName}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {o.description && <p className="text-sm text-soft-muted">{o.description}</p>}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-soft-muted">ID: {o.org_id}</span>
+              </div>
+              {o.orgDesc && <p className="text-sm text-soft-muted">{o.orgDesc}</p>}
               {o.location && <p className="text-xs text-soft-muted">Location: {o.location}</p>}
-              <Button className="mt-2 w-full bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white" onClick={() => navigate("/")}>Enter Dashboard</Button>
+              <Button 
+                className="mt-2 w-full bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white" 
+                onClick={() => handleEnterDashboard(o.org_id)}
+              >
+                Enter Dashboard
+              </Button>
             </CardContent>
           </Card>
         ))}
@@ -59,6 +160,9 @@ export default function Organizations() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Create Organization</DialogTitle>
+            <DialogDescription>
+              Enter the details for your new organization.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
