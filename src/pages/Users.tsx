@@ -296,7 +296,7 @@ export default function Users() {
           <DialogFooter>
             <Button
               onClick={handleUpdateUser}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white"
             >
               Update User
             </Button>
