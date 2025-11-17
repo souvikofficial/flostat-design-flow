@@ -11,6 +11,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Plus, QrCode, Search, Edit, Trash2, Building2 } from "lucide-react";
 
 const blocks = [
@@ -36,6 +50,15 @@ const devices = [
 
 export default function Devices() {
   const [createBlockOpen, setCreateBlockOpen] = useState(false);
+  const [createDeviceOpen, setCreateDeviceOpen] = useState(false);
+  const [qrRegisterOpen, setQrRegisterOpen] = useState(false);
+  const [selectedDeviceType, setSelectedDeviceType] = useState("");
+  const [deviceList, setDeviceList] = useState(devices);
+  const [qrForm, setQrForm] = useState({
+    block: "",
+    token: "",
+    name: "",
+  });
 
   const handleCreateBlock = (block: {
     name: string;
@@ -44,6 +67,64 @@ export default function Devices() {
   }) => {
     console.log("Creating block:", block);
     // Handle block creation
+  };
+
+  const handleCreateDevice = () => {
+    if (!selectedDeviceType) {
+      alert("Please select a device type");
+      return;
+    }
+    
+    // Generate new device ID
+    const newId = `DEV-${String(deviceList.length + 1).padStart(3, "0")}`;
+    
+    // Create new device object
+    const newDevice = {
+      id: newId,
+      name: `${selectedDeviceType.charAt(0).toUpperCase() + selectedDeviceType.slice(1)} ${deviceList.length + 1}`,
+      type: selectedDeviceType,
+      location: "New Location",
+      block: "block-a",
+      status: "active" as const,
+      lastSeen: "just now"
+    };
+    
+    // Add to device list
+    setDeviceList([...deviceList, newDevice]);
+    
+    console.log("Device created:", newDevice);
+    alert(`Device created: ${newDevice.name}`);
+    setCreateDeviceOpen(false);
+    setSelectedDeviceType("");
+  };
+
+  const handleQrRegister = () => {
+    if (!qrForm.block || !qrForm.token || !qrForm.name) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    // Generate new device ID
+    const newId = `DEV-${String(deviceList.length + 1).padStart(3, "0")}`;
+    
+    // Create new device object from QR
+    const newDevice = {
+      id: newId,
+      name: qrForm.name,
+      type: "sensor",
+      location: "QR Registered",
+      block: qrForm.block,
+      status: "active" as const,
+      lastSeen: "just now"
+    };
+    
+    // Add to device list
+    setDeviceList([...deviceList, newDevice]);
+    
+    console.log("Device registered via QR:", newDevice);
+    alert(`Device registered: ${newDevice.name}`);
+    setQrRegisterOpen(false);
+    setQrForm({ block: "", token: "", name: "" });
   };
 
   return (
@@ -56,11 +137,15 @@ export default function Devices() {
         <div className="flex gap-2">
           <Button 
             className="gap-2 h-10 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white shadow-soft-sm hover:shadow-soft-md transition-smooth hover:-translate-y-0.5"
+            onClick={() => setCreateDeviceOpen(true)}
           >
             <Plus className="h-4 w-4" />
             Create Device
           </Button>
-          <Button className="gap-2 h-10 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white shadow-soft-sm hover:shadow-soft-md transition-smooth hover:-translate-y-0.5">
+          <Button 
+            className="gap-2 h-10 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white shadow-soft-sm hover:shadow-soft-md transition-smooth hover:-translate-y-0.5"
+            onClick={() => setQrRegisterOpen(true)}
+          >
             <QrCode className="h-4 w-4" />
             QR Register
           </Button>
@@ -79,6 +164,112 @@ export default function Devices() {
         onOpenChange={setCreateBlockOpen}
         onCreateBlock={handleCreateBlock}
       />
+
+      {/* Create Device Modal */}
+      <Dialog open={createDeviceOpen} onOpenChange={setCreateDeviceOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-bold">Create New Device</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Device Type */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">Device Type</label>
+              <Select value={selectedDeviceType} onValueChange={setSelectedDeviceType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose device type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pump">Pump</SelectItem>
+                  <SelectItem value="tank">Tank</SelectItem>
+                  <SelectItem value="valve">Valve</SelectItem>
+                  <SelectItem value="sensor">Sensor</SelectItem>
+                  <SelectItem value="controller">Controller</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={handleCreateDevice}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Create Device
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Register Modal */}
+      <Dialog open={qrRegisterOpen} onOpenChange={setQrRegisterOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-bold">QR Register Device</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Select Block */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">Select Block</label>
+              <Select value={qrForm.block} onValueChange={(value) => setQrForm({ ...qrForm, block: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a block" />
+                </SelectTrigger>
+                <SelectContent>
+                  {blocks.map((block) => (
+                    <SelectItem key={block.id} value={block.id}>
+                      {block.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Device Token */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">Device Token</label>
+              <Input
+                placeholder="Enter device token"
+                value={qrForm.token}
+                onChange={(e) => setQrForm({ ...qrForm, token: e.target.value })}
+                className="w-full"
+              />
+            </div>
+
+            {/* Device Name */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">Device Name</label>
+              <Input
+                placeholder="Enter device name"
+                value={qrForm.name}
+                onChange={(e) => setQrForm({ ...qrForm, name: e.target.value })}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 flex">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setQrRegisterOpen(false);
+                setQrForm({ block: "", token: "", name: "" });
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleQrRegister}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Next
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-md">
@@ -103,7 +294,7 @@ export default function Devices() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {devices.map((device) => (
+            {deviceList.map((device) => (
               <TableRow key={device.id} className="hover:bg-muted/20 transition-smooth">
                 <TableCell className="font-mono text-sm text-soft">{device.id}</TableCell>
                 <TableCell className="font-medium text-soft">{device.name}</TableCell>

@@ -9,7 +9,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Plus, Search, Edit, Trash2, Mail, Shield } from "lucide-react";
+import { useState } from "react";
 
 const roleColors = {
   Admin: "bg-destructive/10 text-destructive border-destructive/20",
@@ -29,6 +44,21 @@ const users = [
 ] as const;
 
 export default function Users() {
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+
+  const handleSendInvite = () => {
+    if (!selectedRole || !userEmail) {
+      alert("Please fill in all fields");
+      return;
+    }
+    console.log("Invite sent:", { role: selectedRole, email: userEmail });
+    alert(`Invite sent to ${userEmail} as ${selectedRole}`);
+    setIsInviteOpen(false);
+    setSelectedRole("");
+    setUserEmail("");
+  };
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -36,7 +66,7 @@ export default function Users() {
           <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
           <p className="text-muted-foreground mt-1">Manage system users and their roles</p>
         </div>
-        <Button variant="aqua" className="gap-2">
+        <Button variant="aqua" className="gap-2" onClick={() => setIsInviteOpen(true)}>
           <Plus className="h-4 w-4" />
           Add User
         </Button>
@@ -126,6 +156,53 @@ export default function Users() {
       </div>
 
       {/* Summary cards moved above; removed from bottom */}
+
+      {/* Invite User Modal */}
+      <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-bold">Invite user to org</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Choose Role */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">Choose Role</label>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="Controller">Controller</SelectItem>
+                  <SelectItem value="Guest">Guest</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* User Email */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">User Email</label>
+              <Input
+                type="email"
+                placeholder="Enter user email"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={handleSendInvite}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Send invite
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

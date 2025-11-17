@@ -14,6 +14,7 @@ import Reports from "./pages/Reports";
 import OCR from "./pages/OCR";
 import Settings from "./pages/Settings";
 import SCADA from "./pages/SCADA";
+import CustomerService from "./pages/CustomerService";
 import NotFound from "./pages/NotFound";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -59,6 +60,7 @@ function AppShell() {
               <Route path="/reports" element={<Reports />} />
               <Route path="/ocr" element={<OCR />} />
               <Route path="/scada" element={<SCADA />} />
+              <Route path="/customer-service" element={<CustomerService />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
