@@ -47,6 +47,14 @@ export default function Users() {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<{ id: string; name: string; email: string; role: string; lastActive: string; department: string } | null>(null);
+  const [editForm, setEditForm] = useState({
+    role: "",
+    email: "",
+  });
+  const [isRemoveOpen, setIsRemoveOpen] = useState(false);
+  const [userToRemove, setUserToRemove] = useState<{ id: string; name: string; email: string; role: string; lastActive: string; department: string } | null>(null);
 
   const handleSendInvite = () => {
     if (!selectedRole || !userEmail) {
@@ -58,6 +66,41 @@ export default function Users() {
     setIsInviteOpen(false);
     setSelectedRole("");
     setUserEmail("");
+  };
+
+  const handleEditUser = (user: { id: string; name: string; email: string; role: string; lastActive: string; department: string }) => {
+    setEditingUser(user);
+    setEditForm({
+      role: user.role,
+      email: user.email,
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateUser = () => {
+    if (!editForm.role || !editForm.email) {
+      alert("Please fill in all fields");
+      return;
+    }
+    console.log("User updated:", { id: editingUser?.id, role: editForm.role, email: editForm.email });
+    alert(`User updated successfully`);
+    setIsEditOpen(false);
+    setEditingUser(null);
+    setEditForm({ role: "", email: "" });
+  };
+
+  const handleRemoveUser = (user: { id: string; name: string; email: string; role: string; lastActive: string; department: string }) => {
+    setUserToRemove(user);
+    setIsRemoveOpen(true);
+  };
+
+  const handleConfirmRemove = () => {
+    if (userToRemove) {
+      console.log("User removed:", userToRemove.id);
+      alert(`User ${userToRemove.email} has been removed from the organization`);
+      setIsRemoveOpen(false);
+      setUserToRemove(null);
+    }
   };
   return (
     <div className="space-y-6">
@@ -141,10 +184,18 @@ export default function Users() {
                 <TableCell className="text-sm text-muted-foreground">{user.lastActive}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleEditUser(user)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="destructive" size="icon">
+                    <Button 
+                      variant="destructive" 
+                      size="icon"
+                      onClick={() => handleRemoveUser(user)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -199,6 +250,85 @@ export default function Users() {
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
               Send invite
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update User Modal */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-bold">Update user details</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Choose Role */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">Choose Role</label>
+              <Select value={editForm.role} onValueChange={(value) => setEditForm({ ...editForm, role: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="Controller">Controller</SelectItem>
+                  <SelectItem value="Guest">Guest</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* User Email */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">User Email</label>
+              <Input
+                type="email"
+                placeholder="Enter user email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={handleUpdateUser}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+            >
+              Update User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove User Modal */}
+      <Dialog open={isRemoveOpen} onOpenChange={setIsRemoveOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-bold">Remove user from org</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* User Email */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">User Email</label>
+              <Input
+                type="email"
+                placeholder="Enter user email"
+                value={userToRemove?.email || ""}
+                readOnly
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={handleConfirmRemove}
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
+            >
+              Remove User
             </Button>
           </DialogFooter>
         </DialogContent>

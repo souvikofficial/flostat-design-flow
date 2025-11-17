@@ -10,6 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Plus, RotateCw, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -23,7 +31,7 @@ interface ScheduleEvent {
   deviceId: string;
 }
 
-const devices = [
+const initialDevices = [
   { id: "pump-2", name: "Pump 2" },
   { id: "valve-3", name: "Valve 3" },
   { id: "pump-1", name: "Pump 1" },
@@ -34,7 +42,7 @@ const devices = [
   { id: "valve-2", name: "Valve 2" },
 ];
 
-const events: ScheduleEvent[] = [
+const initialEvents: ScheduleEvent[] = [
   {
     id: "evt-1",
     title: "Scheduled",
@@ -137,14 +145,23 @@ const events: ScheduleEvent[] = [
 ];
 
 export default function Schedule() {
+  const [events, setEvents] = useState<ScheduleEvent[]>(initialEvents);
   const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string>("all");
-  const [timeWindow, setTimeWindow] = useState<string>("today");
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [windowStart, setWindowStart] = useState<number>(12);
   const [windowEnd, setWindowEnd] = useState<number>(18);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState({
+    device: "Pump 1",
+    date: "11/17/2025",
+    startTime: "12:00 PM",
+    endTime: "01:00 PM",
+    description: "",
+  });
+  const [currentDeviceIndex, setCurrentDeviceIndex] = useState(0);
 
   // Live 'now' time, updates periodically for the moving timeline
   const [now, setNow] = useState<Date>(new Date());
@@ -164,10 +181,30 @@ export default function Schedule() {
     setWindowEnd(nextEnd);
   };
 
-  const filteredEvents =
-    selectedDevice === "all"
-      ? events
-      : events.filter((evt) => evt.deviceId === selectedDevice);
+  // Device cycling with chevrons
+  const handlePrevDevice = () => {
+    const newIndex = currentDeviceIndex === 0 ? initialDevices.length - 1 : currentDeviceIndex - 1;
+    setCurrentDeviceIndex(newIndex);
+    setSelectedDevice(initialDevices[newIndex].id);
+  };
+
+  const handleNextDevice = () => {
+    const newIndex = currentDeviceIndex === initialDevices.length - 1 ? 0 : currentDeviceIndex + 1;
+    setCurrentDeviceIndex(newIndex);
+    setSelectedDevice(initialDevices[newIndex].id);
+  };
+
+  // Update currentDeviceIndex when selectedDevice changes from dropdown
+  useEffect(() => {
+    if (selectedDevice !== "all") {
+      const idx = initialDevices.findIndex((d) => d.id === selectedDevice);
+      if (idx >= 0) {
+        setCurrentDeviceIndex(idx);
+      }
+    }
+  }, [selectedDevice]);
+
+  const filteredEvents = selectedDevice === "all" ? events : events.filter((evt) => evt.deviceId === selectedDevice);
 
   const handleReset = () => {
     setSelectedBlocks([]);
@@ -175,19 +212,70 @@ export default function Schedule() {
     setSelectedEventId(null);
   };
 
-  // keyboard navigation across events
+  const handleAddSchedule = () => {
+    if (!scheduleForm.device || !scheduleForm.date || !scheduleForm.startTime || !scheduleForm.endTime || !scheduleForm.description) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    // Find the device ID by name
+    const device = initialDevices.find((d) => d.name === scheduleForm.device);
+    if (!device) {
+      alert("Device not found");
+      return;
+    }
+
+    // Parse times to hours (simplified - assuming AM/PM format)
+    const parseTime = (timeStr: string) => {
+      const parts = timeStr.split(/[\s:]/);
+      let hour = parseInt(parts[0], 10);
+      const minute = parseInt(parts[1], 10) || 0;
+      const isPM = timeStr.includes("PM");
+      if (isPM && hour !== 12) hour += 12;
+      if (!isPM && hour === 12) hour = 0;
+      return hour + minute / 60;
+    };
+
+    const startHour = parseTime(scheduleForm.startTime);
+    const endHour = parseTime(scheduleForm.endTime);
+    const durationHours = Math.max(0.5, endHour - startHour);
+
+    const newEvent: ScheduleEvent = {
+      id: `evt-${Date.now()}`,
+      title: "Scheduled",
+      device: scheduleForm.device,
+      startHour,
+      durationHours,
+      status: "scheduled",
+      deviceId: device.id,
+    };
+
+    setEvents([...events, newEvent]);
+    console.log("Schedule added:", newEvent);
+    alert(`Schedule added for ${scheduleForm.device}`);
+    setIsScheduleOpen(false);
+    setScheduleForm({
+      device: "Pump 1",
+      date: "11/17/2025",
+      startTime: "12:00 PM",
+      endTime: "01:00 PM",
+      description: "",
+    });
+  };
+
+  // Keyboard navigation across events
   const handleKeyNav: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
     const sorted = [...filteredEvents].sort((a, b) => a.startHour - b.startHour);
     const idx = sorted.findIndex((ev) => ev.id === selectedEventId);
-    if (e.key === 'ArrowRight') {
+    if (e.key === "ArrowRight") {
       const next = idx < 0 ? 0 : Math.min(sorted.length - 1, idx + 1);
       setSelectedEventId(sorted[next]?.id ?? null);
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === "ArrowLeft") {
       const prev = idx < 0 ? 0 : Math.max(0, idx - 1);
       setSelectedEventId(sorted[prev]?.id ?? null);
-    } else if (e.key === 'Home') {
+    } else if (e.key === "Home") {
       setSelectedEventId(sorted[0]?.id ?? null);
-    } else if (e.key === 'End') {
+    } else if (e.key === "End") {
       setSelectedEventId(sorted[sorted.length - 1]?.id ?? null);
     }
   };
@@ -234,7 +322,7 @@ export default function Schedule() {
 
             {/* 3. Device Filter 'All Devices' with chevrons */}
             <div className="flex items-center gap-2">
-              <Button title="Previous device" aria-label="Previous device" variant="outline" size="icon" className="h-9 w-9 hover:shadow-soft-sm transition-smooth">
+              <Button title="Previous device" aria-label="Previous device" variant="outline" size="icon" className="h-9 w-9 hover:shadow-soft-sm transition-smooth" onClick={handlePrevDevice}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Select value={selectedDevice} onValueChange={setSelectedDevice}>
@@ -243,14 +331,14 @@ export default function Schedule() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Devices</SelectItem>
-                  {devices.map((device) => (
+                  {initialDevices.map((device) => (
                     <SelectItem key={device.id} value={device.id}>
                       {device.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button title="Next device" aria-label="Next device" variant="outline" size="icon" className="h-9 w-9 hover:shadow-soft-sm transition-smooth">
+              <Button title="Next device" aria-label="Next device" variant="outline" size="icon" className="h-9 w-9 hover:shadow-soft-sm transition-smooth" onClick={handleNextDevice}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -263,7 +351,12 @@ export default function Schedule() {
             </Button>
             
             {/* 5. Add Schedule (primary) */}
-            <Button title="Add schedule" aria-label="Add schedule" className="gap-2 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 h-9 shadow-soft-sm hover:shadow-soft-md transition-smooth hover:-translate-y-0.5">
+            <Button 
+              title="Add schedule" 
+              aria-label="Add schedule" 
+              className="gap-2 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 h-9 shadow-soft-sm hover:shadow-soft-md transition-smooth hover:-translate-y-0.5"
+              onClick={() => setIsScheduleOpen(true)}
+            >
               <Plus className="h-4 w-4" />
               Add Schedule
             </Button>
@@ -316,7 +409,7 @@ export default function Schedule() {
                 </div>
               </div>
             )}
-            {devices.map((device, idx) => {
+            {initialDevices.map((device, idx) => {
               const deviceEvents = filteredEvents.filter(
                 (evt) => evt.deviceId === device.id
               );
@@ -342,7 +435,15 @@ export default function Schedule() {
                       const x = e.clientX - rect.left;
                       const col = Math.floor((x / rect.width) * (hours.length));
                       const h = windowStart + Math.max(0, Math.min(hours.length - 1, col));
-                      console.log('Create event at', device.id, '@', h, ':00');
+                      // Prefill the modal with clicked device and hour
+                      setScheduleForm({
+                        device: device.name,
+                        date: "11/17/2025",
+                        startTime: `${String(Math.floor(h)).padStart(2, "0")}:00 ${"AM"}`,
+                        endTime: `${String(Math.floor(h + 1)).padStart(2, "0")}:00 ${"AM"}`,
+                        description: "",
+                      });
+                      setIsScheduleOpen(true);
                     }}
                     role="grid"
                     aria-label={`Timeline for ${device.name}`}
@@ -363,9 +464,6 @@ export default function Schedule() {
                     )}
 
                     {/* Event pills */}
-                    {/* TODO: Add drag-to-create functionality on empty grid spaces */}
-                    {/* TODO: Add drag-to-resize handles on pill edges */}
-                    {/* TODO: Add overlap detection and warning states */}
                     {deviceEvents.map((event) => (
                       <EventPill
                         key={event.id}
@@ -380,8 +478,16 @@ export default function Schedule() {
                             selectedEventId === event.id ? null : event.id
                           )
                         }
-                        onEdit={() => console.log("Edit event:", event.id)}
-                        onDelete={() => console.log("Delete event:", event.id)}
+                        onEdit={() => {
+                          // Edit event handler - update in local state
+                          console.log("Edit event:", event.id);
+                          // In a real scenario, you'd open an edit modal
+                        }}
+                        onDelete={() => {
+                          // Delete event handler - remove from local state
+                          setEvents(events.filter((e) => e.id !== event.id));
+                          console.log("Delete event:", event.id);
+                        }}
                       />
                     ))}
                   </div>
@@ -402,7 +508,7 @@ export default function Schedule() {
                   <p className="text-sm text-muted-foreground max-w-sm">
                     Click "Add Schedule" to create a new event for your devices
                   </p>
-                  <Button className="mt-4 gap-2 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90">
+                  <Button className="mt-4 gap-2 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90" onClick={() => setIsScheduleOpen(true)}>
                     <Plus className="h-4 w-4" />
                     Add Schedule
                   </Button>
@@ -435,6 +541,91 @@ export default function Schedule() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Add Schedule Event Modal */}
+      <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Add Schedule Event</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Device and Date Display */}
+            <div className="bg-blue-50 rounded-lg p-4 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Device:</span>
+                <span className="text-sm font-medium">{scheduleForm.device}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Date:</span>
+                <span className="text-sm font-medium">{scheduleForm.date}</span>
+              </div>
+            </div>
+
+            {/* Start Time */}
+            <div>
+              <label className="text-sm font-medium block mb-2">Start Time *</label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  value={scheduleForm.startTime}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, startTime: e.target.value })}
+                  className="flex-1"
+                  placeholder="12:00 PM"
+                />
+                <button className="p-2 border rounded-md hover:bg-gray-100">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* End Time */}
+            <div>
+              <label className="text-sm font-medium block mb-2">End Time *</label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  value={scheduleForm.endTime}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, endTime: e.target.value })}
+                  className="flex-1"
+                  placeholder="01:00 PM"
+                />
+                <button className="p-2 border rounded-md hover:bg-gray-100">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="text-sm font-medium block mb-2">What needs to be done? *</label>
+              <textarea
+                value={scheduleForm.description}
+                onChange={(e) => setScheduleForm({ ...scheduleForm, description: e.target.value })}
+                placeholder="Procedure, Replace valve seal, etc."
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                rows={3}
+              />
+              <p className="text-xs text-gray-500 mt-1">0/300 characters</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={handleAddSchedule}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Add Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -52,11 +52,17 @@ export default function Devices() {
   const [createBlockOpen, setCreateBlockOpen] = useState(false);
   const [createDeviceOpen, setCreateDeviceOpen] = useState(false);
   const [qrRegisterOpen, setQrRegisterOpen] = useState(false);
+  const [updateDeviceOpen, setUpdateDeviceOpen] = useState(false);
   const [selectedDeviceType, setSelectedDeviceType] = useState("");
   const [deviceList, setDeviceList] = useState(devices);
   const [qrForm, setQrForm] = useState({
     block: "",
     token: "",
+    name: "",
+  });
+  const [editingDevice, setEditingDevice] = useState<typeof devices[0] | null>(null);
+  const [editForm, setEditForm] = useState({
+    block: "",
     name: "",
   });
 
@@ -127,6 +133,37 @@ export default function Devices() {
     setQrForm({ block: "", token: "", name: "" });
   };
 
+  const handleEditDevice = (device: typeof devices[0]) => {
+    setEditingDevice(device);
+    setEditForm({
+      block: device.block,
+      name: device.name,
+    });
+    setUpdateDeviceOpen(true);
+  };
+
+  const handleUpdateDevice = () => {
+    if (!editForm.block || !editForm.name) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    if (editingDevice) {
+      // Update device in list
+      const updatedList = deviceList.map((device) =>
+        device.id === editingDevice.id
+          ? { ...device, block: editForm.block, name: editForm.name }
+          : device
+      );
+      setDeviceList(updatedList);
+      console.log("Device updated:", { id: editingDevice.id, ...editForm });
+      alert(`Device updated: ${editForm.name}`);
+      setUpdateDeviceOpen(false);
+      setEditingDevice(null);
+      setEditForm({ block: "", name: "" });
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
@@ -184,8 +221,7 @@ export default function Devices() {
                   <SelectItem value="pump">Pump</SelectItem>
                   <SelectItem value="tank">Tank</SelectItem>
                   <SelectItem value="valve">Valve</SelectItem>
-                  <SelectItem value="sensor">Sensor</SelectItem>
-                  <SelectItem value="controller">Controller</SelectItem>
+                  <SelectItem value="sump">Sump</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -313,11 +349,20 @@ export default function Devices() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" className="hover:shadow-soft-sm transition-smooth">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="hover:shadow-soft-sm transition-smooth"
+                      onClick={() => handleEditDevice(device)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="hover:shadow-soft-sm transition-smooth">
-                      <Trash2 className="h-4 w-4 text-destructive/90" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="hover:bg-[#C00000] hover:text-white transition-smooth"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
@@ -326,6 +371,65 @@ export default function Devices() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Update Device Modal */}
+      <Dialog open={updateDeviceOpen} onOpenChange={setUpdateDeviceOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-bold">Update Device</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Select Block */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">Select Block</label>
+              <Select value={editForm.block} onValueChange={(value) => setEditForm({ ...editForm, block: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a block" />
+                </SelectTrigger>
+                <SelectContent>
+                  {blocks.map((block) => (
+                    <SelectItem key={block.id} value={block.id}>
+                      {block.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Device Name */}
+            <div>
+              <label className="text-sm font-medium text-center block mb-2">Device Name</label>
+              <Input
+                placeholder="Enter device name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 flex">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUpdateDeviceOpen(false);
+                setEditingDevice(null);
+                setEditForm({ block: "", name: "" });
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateDevice}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Next
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
