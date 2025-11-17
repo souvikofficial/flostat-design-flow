@@ -187,13 +187,15 @@ export default function Users() {
                     <Button 
                       variant="ghost" 
                       size="icon"
+                      className="hover:shadow-soft-sm transition-smooth"
                       onClick={() => handleEditUser(user)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button 
-                      variant="destructive" 
+                      variant="ghost" 
                       size="icon"
+                      className="hover:bg-[#C00000] hover:text-white transition-smooth"
                       onClick={() => handleRemoveUser(user)}
                     >
                       <Trash2 className="h-4 w-4" />

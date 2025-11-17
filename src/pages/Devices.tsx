@@ -65,6 +65,8 @@ export default function Devices() {
     block: "",
     name: "",
   });
+  const [removeDeviceOpen, setRemoveDeviceOpen] = useState(false);
+  const [deviceToRemove, setDeviceToRemove] = useState<typeof devices[0] | null>(null);
 
   const handleCreateBlock = (block: {
     name: string;
@@ -161,6 +163,22 @@ export default function Devices() {
       setUpdateDeviceOpen(false);
       setEditingDevice(null);
       setEditForm({ block: "", name: "" });
+    }
+  };
+
+  const handleRemoveDeviceClick = (device: typeof devices[0]) => {
+    setDeviceToRemove(device);
+    setRemoveDeviceOpen(true);
+  };
+
+  const handleConfirmRemoveDevice = () => {
+    if (deviceToRemove) {
+      // Remove device from list
+      const updatedList = deviceList.filter((device) => device.id !== deviceToRemove.id);
+      setDeviceList(updatedList);
+      console.log("Device removed:", deviceToRemove.id);
+      setRemoveDeviceOpen(false);
+      setDeviceToRemove(null);
     }
   };
 
@@ -361,6 +379,7 @@ export default function Devices() {
                       variant="ghost" 
                       size="icon" 
                       className="hover:bg-[#C00000] hover:text-white transition-smooth"
+                      onClick={() => handleRemoveDeviceClick(device)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -426,6 +445,37 @@ export default function Devices() {
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
             >
               Next
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Device Modal */}
+      <Dialog open={removeDeviceOpen} onOpenChange={setRemoveDeviceOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-lg font-bold">Remove Device</DialogTitle>
+          </DialogHeader>
+
+          <div className="py-6 text-center">
+            <p className="text-gray-700 text-sm">
+              Are you sure you want to remove device <span className="font-semibold">{deviceToRemove?.name}</span>?
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2 flex">
+            <Button
+              variant="outline"
+              onClick={() => setRemoveDeviceOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmRemoveDevice}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium"
+            >
+              Remove
             </Button>
           </DialogFooter>
         </DialogContent>

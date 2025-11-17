@@ -151,7 +151,7 @@ export default function CustomerService() {
           </div>
           <div className="mt-3">
             <span
-              className="inline-flex items-center justify-center rounded-full font-bold text-sm h-10 w-10 bg-warning text-white shadow-[0_0_0_6px_rgba(192,0,0,0.25)]"
+              className="inline-flex items-center justify-center rounded-full font-bold text-sm h-10 w-10 bg-[#C00000] text-white shadow-[0_0_0_6px_rgba(192,0,0,0.25)]"
               aria-label={`${activeTickets.length} active tickets`}
             >
               {activeTickets.length}
