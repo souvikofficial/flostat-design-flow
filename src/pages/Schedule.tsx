@@ -154,8 +154,18 @@ export default function Schedule() {
   const [windowStart, setWindowStart] = useState<number>(12);
   const [windowEnd, setWindowEnd] = useState<number>(18);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [scheduleForm, setScheduleForm] = useState({
     device: "Pump 1",
+    date: "11/17/2025",
+    startTime: "12:00 PM",
+    endTime: "01:00 PM",
+    description: "",
+  });
+  const [editForm, setEditForm] = useState({
+    device: "",
     date: "11/17/2025",
     startTime: "12:00 PM",
     endTime: "01:00 PM",
@@ -261,6 +271,60 @@ export default function Schedule() {
       endTime: "01:00 PM",
       description: "",
     });
+  };
+
+  const handleUpdateEvent = () => {
+    if (!editForm.device || !editForm.date || !editForm.startTime || !editForm.endTime || !editForm.description) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    if (!editingEvent) return;
+
+    // Parse times
+    const parseTime = (timeStr: string) => {
+      const parts = timeStr.split(/[\s:]/);
+      let hour = parseInt(parts[0], 10);
+      const minute = parseInt(parts[1], 10) || 0;
+      const isPM = timeStr.includes("PM");
+      if (isPM && hour !== 12) hour += 12;
+      if (!isPM && hour === 12) hour = 0;
+      return hour + minute / 60;
+    };
+
+    const startHour = parseTime(editForm.startTime);
+    const endHour = parseTime(editForm.endTime);
+    const durationHours = Math.max(0.5, endHour - startHour);
+
+    // Update event in list
+    const updatedEvents = events.map((evt) =>
+      evt.id === editingEvent.id
+        ? {
+            ...evt,
+            startHour,
+            durationHours,
+            title: editForm.description,
+          }
+        : evt
+    );
+
+    setEvents(updatedEvents);
+    console.log("Event updated:", editingEvent.id);
+    setIsEditOpen(false);
+    setEditingEvent(null);
+  };
+
+  const handleDeleteEditingEvent = () => {
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!editingEvent) return;
+    setEvents(events.filter((e) => e.id !== editingEvent.id));
+    console.log("Event deleted:", editingEvent.id);
+    setIsEditOpen(false);
+    setIsDeleteConfirmOpen(false);
+    setEditingEvent(null);
   };
 
   // Keyboard navigation across events
@@ -479,9 +543,21 @@ export default function Schedule() {
                           )
                         }
                         onEdit={() => {
-                          // Edit event handler - update in local state
-                          console.log("Edit event:", event.id);
-                          // In a real scenario, you'd open an edit modal
+                          // Open edit modal with event data
+                          setEditingEvent(event);
+                          const startHour = Math.floor(event.startHour);
+                          const startMin = Math.round((event.startHour % 1) * 60);
+                          const endHour = Math.floor(event.startHour + event.durationHours);
+                          const endMin = Math.round(((event.startHour + event.durationHours) % 1) * 60);
+                          
+                          setEditForm({
+                            device: event.device,
+                            date: "11/17/2025",
+                            startTime: `${String(startHour).padStart(2, "0")}:${String(startMin).padStart(2, "0")} PM`,
+                            endTime: `${String(endHour).padStart(2, "0")}:${String(endMin).padStart(2, "0")} PM`,
+                            description: event.title,
+                          });
+                          setIsEditOpen(true);
                         }}
                         onDelete={() => {
                           // Delete event handler - remove from local state
@@ -622,6 +698,128 @@ export default function Schedule() {
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
               Add Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Event Modal */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Edit Event</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Device and Date Display */}
+            <div className="bg-blue-50 rounded-lg p-4 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Device:</span>
+                <span className="text-sm font-medium">{editForm.device}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Date:</span>
+                <span className="text-sm font-medium">{editForm.date}</span>
+              </div>
+            </div>
+
+            {/* Start Time */}
+            <div>
+              <label className="text-sm font-medium block mb-2">Start Time *</label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  value={editForm.startTime}
+                  onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
+                  className="flex-1"
+                  placeholder="12:00 PM"
+                />
+                <button className="p-2 border rounded-md hover:bg-gray-100">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* End Time */}
+            <div>
+              <label className="text-sm font-medium block mb-2">End Time *</label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="text"
+                  value={editForm.endTime}
+                  onChange={(e) => setEditForm({ ...editForm, endTime: e.target.value })}
+                  className="flex-1"
+                  placeholder="01:00 PM"
+                />
+                <button className="p-2 border rounded-md hover:bg-gray-100">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="text-sm font-medium block mb-2">What needs to be done? *</label>
+              <textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                placeholder="Scheduled"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                rows={3}
+              />
+              <p className="text-xs text-gray-500 mt-1">9/100 characters</p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 flex">
+            <Button
+              onClick={handleDeleteEditingEvent}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </Button>
+            <Button
+              onClick={handleUpdateEvent}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-lg font-bold">Delete Event</DialogTitle>
+          </DialogHeader>
+
+          <div className="py-6 text-center">
+            <p className="text-gray-700 text-sm">
+              Are you sure you want to delete this scheduled event for <span className="font-semibold">{editingEvent?.device}</span>?
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2 flex">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmDelete}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium"
+            >
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

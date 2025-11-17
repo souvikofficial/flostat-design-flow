@@ -409,7 +409,7 @@ export default function CustomerService() {
             </Button>
             <Button
               onClick={handleSubmitTicket}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              className="flex-1 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white"
             >
               Submit
             </Button>
