@@ -248,7 +248,7 @@ export default function Devices() {
           <DialogFooter>
             <Button
               onClick={handleCreateDevice}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white"
             >
               Create Device
             </Button>
@@ -317,7 +317,7 @@ export default function Devices() {
             </Button>
             <Button
               onClick={handleQrRegister}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              className="flex-1 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white"
             >
               Next
             </Button>
@@ -441,8 +441,8 @@ export default function Devices() {
               Cancel
             </Button>
             <Button
-              onClick={handleUpdateDevice}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={handleQrRegister}
+              className="flex-1 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white"
             >
               Next
             </Button>
@@ -450,7 +450,7 @@ export default function Devices() {
         </DialogContent>
       </Dialog>
 
-      {/* Remove Device Modal */}
+      {/* Update Device Modal */}
       <Dialog open={removeDeviceOpen} onOpenChange={setRemoveDeviceOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader className="text-center">

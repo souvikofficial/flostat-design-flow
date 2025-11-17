@@ -695,7 +695,7 @@ export default function Schedule() {
           <DialogFooter>
             <Button
               onClick={handleAddSchedule}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white"
             >
               Add Schedule
             </Button>
@@ -780,13 +780,13 @@ export default function Schedule() {
           <DialogFooter className="gap-2 flex">
             <Button
               onClick={handleDeleteEditingEvent}
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              className="flex-1 bg-[#C00000] hover:bg-[#C00000]/90 text-white"
             >
               Delete
             </Button>
             <Button
               onClick={handleUpdateEvent}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              className="flex-1 bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white"
             >
               Save
             </Button>

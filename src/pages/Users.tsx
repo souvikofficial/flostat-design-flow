@@ -249,7 +249,7 @@ export default function Users() {
           <DialogFooter>
             <Button
               onClick={handleSendInvite}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full bg-[hsl(var(--aqua))] hover:bg-[hsl(var(--aqua))]/90 text-white"
             >
               Send invite
             </Button>
